@@ -65,21 +65,6 @@
     @keyframes dots { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
     
     .highlight-alert { background-color: #fff3cd !important; font-weight: bold; }
-
-    /* Footer Styles */
-    .footer-text { margin-top: auto; padding-top: 30px; text-align: center; font-size: 0.85rem; color: rgba(255,255,255,0.7); }
-    .footer-text-form { text-align: center; font-size: 0.85rem; color: #6c757d; margin-top: 20px; padding-bottom: 20px; }
-
-    /* Map Styles */
-    #mapContainer {
-      width: 100%;
-      height: 200px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      overflow: hidden;
-      background-color: #f0f0f0;
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
@@ -119,7 +104,6 @@
         </table>
       </div>
     </div>
-    <footer class="footer-text">จัดทำโดย ฝ่ายบริหารงานทั่วไป สำนักงานตรวจและบังคับการ สำนักเทศกิจ</footer>
   </div>
 
   <div id="mainForm">
@@ -162,10 +146,8 @@
         </div>
       </div>
     </div>
-    <footer class="footer-text-form">จัดทำโดย ฝ่ายบริหารงานทั่วไป สำนักงานตรวจและบังคับการ สำนักเทศกิจ</footer>
   </div>
 
-  <!-- Confirm Modal (เพิ่ม GPS Section) -->
   <div class="modal fade" id="confirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
@@ -176,16 +158,8 @@
           <p class="mb-2 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
           <p class="mb-2 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
           <p class="mb-2 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
+          <p class="mb-2 text-dark"><b>พิกัด:</b> <span id="modalGps" class="text-primary fs-6 fw-bold"></span></p>
           <p class="mb-0 mt-3 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
-          
-          <!-- GPS Section -->
-          <div class="mt-3 p-2 bg-light rounded text-left">
-             <b class="text-dark"><i class="bi bi-geo-alt-fill text-danger"></i> ตำแหน่งที่ตั้ง:</b> <br>
-             <small id="modalGpsText" class="text-muted">กำลังระบุตำแหน่ง...</small>
-             <div id="mapContainer">
-                <!-- แผนที่จะแสดงที่นี่ -->
-             </div>
-          </div>
         </div>
         <div class="modal-footer bg-light rounded-bottom-4">
           <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
@@ -195,13 +169,111 @@
     </div>
   </div>
 
-  <!-- ใส่ Modal อื่นๆ เหมือนเดิม (SetPass, Verify, Missed, Alert, Loading, Success) -->
-  <!-- ... Copy ส่วน Modal อื่นๆ มาวางได้เลยครับ ... -->
+  <div id="setPasswordModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3">ตั้งรหัสผ่านครั้งแรก</h5>
+      <p class="text-muted small mb-3">กรุณาตั้งรหัสผ่าน 6 หลัก (ตัวเลขเท่านั้น)</p>
+      <div class="mb-3">
+        <input type="number" id="newPass1" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div class="mb-3">
+        <input type="number" id="newPass2" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div id="setupPassError" class="text-danger small mb-2" style="display:none;"></div>
+      <button class="btn btn-bma w-100 mt-2" onclick="saveNewPassword()">บันทึกรหัสผ่าน</button>
+      <button class="btn btn-link text-muted small mt-2" onclick="backToHome()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <div id="verifyPasswordModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3">ยืนยันรหัสผ่าน</h5>
+      <p class="text-muted small">กรุณากรอกรหัสผ่าน 6 หลัก</p>
+      <div class="mb-3">
+        <input type="password" inputmode="numeric" id="verifyPass" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div id="verifyPassError" class="text-danger small mb-2" style="display:none;"></div>
+      <button class="btn btn-bma w-100 mt-2" onclick="submitData()">ยืนยันการบันทึก</button>
+      <button class="btn btn-link text-muted small mt-2" onclick="cancelVerify()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <div id="missedCheckoutModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-danger mb-3">พบการปฏิบัติงานที่ยังไม่สิ้นสุด!</h5>
+      <p class="text-dark small">ท่านยังไม่ได้ลงเวลาออกในวันที่ <span id="missedDate" class="fw-bold"></span></p>
+      <p class="text-muted small">กรุณากรอกเวลาออกของวันดังกล่าว เพื่อสิ้นสุดการทำงาน<br>(รูปแบบ ชั่วโมง:นาที เช่น 17:30)</p>
+      
+      <div class="mb-3 d-flex justify-content-center align-items-center gap-2">
+        <input type="text" id="missedTimeInput" class="time-input" placeholder="17:30" maxlength="5">
+        <span>น.</span>
+      </div>
+      
+      <div id="missedError" class="text-danger small mb-2" style="display:none;"></div>
+      
+      <button class="btn btn-bma w-100 mt-2" onclick="submitMissedCheckout()">บันทึกเวลาออกย้อนหลัง</button>
+    </div>
+  </div>
+
+  <div id="alertModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3" id="alertTitle">แจ้งเตือน</h5>
+      <p class="text-dark" id="alertMsg"></p>
+      <button class="btn btn-bma w-100 mt-3" onclick="closeAlert()">ตกลง</button>
+    </div>
+  </div>
+
+  <div id="loadingModalWrapper" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="spinner-border text-bma mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+      <h5 id="loadingText" class="fw-bold text-bma mb-2 loading-dots">กำลังบันทึกข้อมูล โปรดรอสักครู่</h5>
+    </div>
+  </div>
+
+  <div id="successModalWrapper" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="var(--bma-green)" class="bi bi-check-circle-fill mb-3" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+      </svg>
+      <h4 class="fw-bold text-bma mb-2">บันทึกข้อมูลเรียบร้อยแล้ว</h4>
+      <p class="text-muted mb-0">กำลังดำเนินการต่อ...</p>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwKXg3F9OPEJdR_JaLfLPwtz64rWzOqbFFWKKmTbn2sZyqlQFdlDw_9Y_Xs6Ikfmdk/exec'; // **ใส่ URL ตรงนี้**
+    // ==========================================
+    // ส่วนเชื่อมต่อ API ของ GAS
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbzw-o1c-BnvqHBrC4Om8NhXJcm9yKE36rjPd10fSdhFhwlhLa4-74fEW9XnFLRgkKQ/exec"; // <--- แก้ไข URL ให้ตรงกับที่ Deploy ใหม่
+
+    async function callGetAPI(action) {
+      try {
+        let response = await fetch(API_URL + "?action=" + action);
+        return await response.json();
+      } catch (error) {
+        console.error("API Error (GET):", error);
+        showAlert('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+        return null;
+      }
+    }
+
+    async function callPostAPI(action, data) {
+      try {
+        let response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: action, data: data }),
+          headers: { "Content-Type": "text/plain;charset=utf-8" }
+        });
+        return await response.json();
+      } catch (error) {
+        console.error("API Error (POST):", error);
+        showAlert('ข้อผิดพลาด', 'ไม่สามารถส่งข้อมูลไปที่เซิร์ฟเวอร์ได้');
+        return null;
+      }
+    }
+    // ==========================================
 
     let serverTimeMs = 0;
     let allStaffData = {};
@@ -215,38 +287,15 @@
     let wrongPassCount = 0;
     let appSettings = {};
     
-    // Variables for GPS
+    // ตัวแปรสำหรับเก็บพิกัด
     let currentLat = null;
     let currentLng = null;
 
-    async function callGetAPI(action) {
-      try {
-        const response = await fetch(`${GAS_WEB_APP_URL}?action=${action}`);
-        return await response.json();
-      } catch (error) {
-        console.error('GET Error:', error);
-        return null;
-      }
-    }
-
-    async function callPostAPI(action, data) {
-      try {
-        const payload = { action: action, ...data };
-        const response = await fetch(GAS_WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        return await response.json();
-      } catch (error) {
-        console.error('POST Error:', error);
-        return null;
-      }
-    }
-
     window.onload = function() {
       confirmModalObj = new bootstrap.Modal(document.getElementById('confirmModal'));
-      callGetAPI('getInitData').then(data => { if(data) initApp(data); });
+      callGetAPI('getInitData').then(data => {
+        if(data) initApp(data);
+      });
     };
 
     function initApp(data) {
@@ -269,54 +318,36 @@
           renderTime();
       }, 1000);
     }
-    
-    // ... [Keep updateTables, renderTime, formatTime, backToHome, populateDept... functions same as before] ...
-    // I will omit them here for brevity but they should exist in your file.
 
-    function enterSystem() {
-      document.getElementById('landingPage').style.display = 'none';
-      document.getElementById('mainForm').style.display = 'block';
-    }
-    
-    function backToHome() {
-      document.getElementById('mainForm').style.display = 'none';
-      document.getElementById('landingPage').style.display = 'flex';
-      document.getElementById('deptSelect').value = "";
-      deptChanged();
-      hideButtons();
-      currentUserName = ""; currentUserDept = ""; wrongPassCount = 0;
-      callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
-    }
-    
     function updateTables(logs, pendings) {
-      let tbody = document.getElementById('todayLogsBody');
-      let now = new Date(serverTimeMs);
-      let currentDecimal = now.getHours() + now.getMinutes()/60;
-      let highlight = currentDecimal >= appSettings.alertTime;
-      
-      if (!logs || logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-muted py-3">ยังไม่มีข้อมูล</td></tr>';
-      } else {
-        let html = '';
-        logs.forEach(log => {
-           let isHighlight = highlight && (!log.timeOut || log.timeOut === "-");
-           let rowClass = isHighlight ? "highlight-alert" : "";
-           html += `<tr class="${rowClass}"><td>${log.name}</td><td>${log.timeIn}</td><td>${log.timeOut}</td></tr>`;
-        });
-        tbody.innerHTML = html;
-      }
-      
-      let pBody = document.getElementById('pendingLogsBody');
-      if(pendings && pendings.length > 0) {
-          document.getElementById('pendingSection').style.display = 'block';
-          let pHtml = '';
-          pendings.forEach(p => {
-              pHtml += `<tr class="text-danger fw-bold"><td>${p.name}</td><td>${p.date}</td><td>${p.timeIn}</td></tr>`;
+        let tbody = document.getElementById('todayLogsBody');
+        let now = new Date(serverTimeMs);
+        let currentDecimal = now.getHours() + now.getMinutes()/60;
+        let highlight = currentDecimal >= appSettings.alertTime;
+        
+        if (!logs || logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-muted py-3">ยังไม่มีข้อมูล</td></tr>';
+        } else {
+          let html = '';
+          logs.forEach(log => {
+             let isHighlight = highlight && (!log.timeOut || log.timeOut === "-");
+             let rowClass = isHighlight ? "highlight-alert" : "";
+             html += `<tr class="${rowClass}"><td>${log.name}</td><td>${log.timeIn}</td><td>${log.timeOut}</td></tr>`;
           });
-          pBody.innerHTML = pHtml;
-      } else {
-          document.getElementById('pendingSection').style.display = 'none';
-      }
+          tbody.innerHTML = html;
+        }
+        
+        let pBody = document.getElementById('pendingLogsBody');
+        if(pendings && pendings.length > 0) {
+            document.getElementById('pendingSection').style.display = 'block';
+            let pHtml = '';
+            pendings.forEach(p => {
+                pHtml += `<tr class="text-danger fw-bold"><td>${p.name}</td><td>${p.date}</td><td>${p.timeIn}</td></tr>`;
+            });
+            pBody.innerHTML = pHtml;
+        } else {
+            document.getElementById('pendingSection').style.display = 'none';
+        }
     }
 
     function renderTime() {
@@ -338,7 +369,10 @@
       }
       
       let statusHtml = "";
-      let timeDecimal = d.getHours() + d.getMinutes()/60;
+      let h = d.getHours();
+      let m = d.getMinutes();
+      let timeDecimal = h + m/60;
+      
       if (timeDecimal < appSettings.startTime) {
           statusHtml = "<span class='status-warning'>นอกเวลาทำการ (เริ่มเช็คอินได้เวลา " + formatTime(appSettings.startTime) + " น.)</span>";
       } else if (timeDecimal >= appSettings.startTime && timeDecimal <= appSettings.alertTime) {
@@ -356,6 +390,34 @@
         return h.toString().padStart(2,'0') + "." + m.toString().padStart(2,'0');
     }
 
+    function enterSystem() {
+      document.getElementById('landingPage').style.display = 'none';
+      document.getElementById('mainForm').style.display = 'block';
+    }
+    
+    function backToHome() {
+      document.getElementById('mainForm').style.display = 'none';
+      document.getElementById('setPasswordModal').style.display = 'none';
+      document.getElementById('verifyPasswordModal').style.display = 'none';
+      document.getElementById('missedCheckoutModal').style.display = 'none';
+      document.getElementById('loadingModalWrapper').style.display = 'none';
+      document.getElementById('successModalWrapper').style.display = 'none';
+      document.getElementById('alertModal').style.display = 'none';
+      
+      document.getElementById('landingPage').style.display = 'flex';
+      
+      document.getElementById('deptSelect').value = "";
+      deptChanged();
+      hideButtons();
+      currentUserName = "";
+      currentUserDept = "";
+      wrongPassCount = 0;
+      currentLat = null;
+      currentLng = null;
+      
+      callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
+    }
+
     function populateDept() {
       let deptSelect = document.getElementById('deptSelect');
       deptSelect.innerHTML = '<option value="">-- เลือกสังกัด --</option>';
@@ -365,7 +427,8 @@
     function deptChanged() {
       let dept = document.getElementById('deptSelect').value;
       let groupSelect = document.getElementById('groupSelect');
-      hideButtons(); document.getElementById('nameDiv').style.display = 'none';
+      hideButtons();
+      document.getElementById('nameDiv').style.display = 'none';
       groupSelect.innerHTML = '<option value="">-- เลือกกลุ่มงาน --</option>';
       if (!dept) { document.getElementById('groupDiv').style.display = 'none'; return; }
       let groups = Object.keys(allStaffData[dept]);
@@ -374,7 +437,7 @@
         populateNames(dept, "ไม่มี");
       } else {
         document.getElementById('groupDiv').style.display = 'block';
-        groups.forEach(g => groupSelect.innerHTML += `<option value="${g}">${g}</option>`);
+        for (let i = 0; i < groups.length; i++) { groupSelect.innerHTML += `<option value="${groups[i]}">${groups[i]}</option>`; }
       }
     }
 
@@ -437,8 +500,7 @@
       document.getElementById('loadingMsg').style.display = 'none';
     }
 
-    // ================== GPS & Submit Logic ==================
-
+    // *** ปรับปรุงฟังก์ชันเตรียมบันทึกข้อมูล ให้ขอดึงพิกัด GPS ก่อน ***
     function prepareSubmit(action) {
       let now = new Date(serverTimeMs);
       let currentDecimal = now.getHours() + now.getMinutes()/60;
@@ -455,87 +517,51 @@
         return;
       }
 
-      currentTimestampToSave = serverTimeMs; 
-      currentActionToSave = action;
-      
-      document.getElementById('modalName').innerText = currentUserName;
-      document.getElementById('modalDept').innerText = currentUserDept;
-      document.getElementById('modalAction').innerText = action;
-      document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+      // แสดงหน้าต่างโหลด แจ้งว่ากำลังดึง GPS
+      document.getElementById('loadingText').innerText = "กำลังค้นหาตำแหน่ง GPS ของคุณ...";
+      document.getElementById('loadingModalWrapper').style.display = 'flex';
 
-      // *** Start GPS Logic ***
-      document.getElementById('modalGpsText').innerText = "กำลังระบุตำแหน่ง...";
-      document.getElementById('mapContainer').innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-bma" role="status"></div></div>';
-      
-      getLocation(); // Get location first
-
-      confirmModalObj.show();
-    }
-
-    function getLocation() {
+      // ตรวจสอบและดึง GPS
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition, showError);
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            // ดึงข้อมูลสำเร็จ
+            document.getElementById('loadingModalWrapper').style.display = 'none';
+            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่"; // คืนค่าข้อความเดิมไว้ใช้ทีหลัง
+            
+            currentLat = position.coords.latitude;
+            currentLng = position.coords.longitude;
+            
+            currentTimestampToSave = serverTimeMs; 
+            currentActionToSave = action;
+            
+            document.getElementById('modalName').innerText = currentUserName;
+            document.getElementById('modalDept').innerText = currentUserDept;
+            document.getElementById('modalAction').innerText = action;
+            document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+            // แสดงพิกัดใน Popup ยืนยัน
+            document.getElementById('modalGps').innerText = currentLat.toFixed(5) + ", " + currentLng.toFixed(5);
+
+            confirmModalObj.show();
+          },
+          function(error) {
+            // เกิดข้อผิดพลาดในการดึง GPS
+            document.getElementById('loadingModalWrapper').style.display = 'none';
+            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
+            
+            let errMsg = "ไม่สามารถดึงข้อมูลพิกัดได้ กรุณาตรวจสอบการตั้งค่า";
+            if(error.code === 1) errMsg = "คุณไม่อนุญาตให้ระบบเข้าถึงตำแหน่ง (Location) กรุณาไปตั้งค่าอนุญาตในเบราว์เซอร์ก่อน";
+            else if(error.code === 2) errMsg = "ไม่พบสัญญาณ GPS กรุณาตรวจสอบว่าเปิดระบุตำแหน่งบนมือถือแล้วหรือไม่";
+            else if(error.code === 3) errMsg = "ใช้เวลาค้นหา GPS นานเกินไป กรุณาลองใหม่อีกครั้ง";
+            
+            showAlert("ข้อผิดพลาด GPS", errMsg);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
       } else {
-        document.getElementById('modalGpsText').innerText = "เบราว์เซอร์ไม่รองรับ GPS";
-        currentLat = null; currentLng = null;
+        document.getElementById('loadingModalWrapper').style.display = 'none';
+        showAlert("ข้อผิดพลาด", "อุปกรณ์หรือเบราว์เซอร์ของคุณไม่รองรับการใช้งาน GPS");
       }
-    }
-
-    function showPosition(position) {
-      currentLat = position.coords.latitude;
-      currentLng = position.coords.longitude;
-      
-      document.getElementById('modalGpsText').innerText = `Lat: ${currentLat.toFixed(6)}, Lng: ${currentLng.toFixed(6)}`;
-      
-      // แสดงแผนที่ OpenStreetMap ฟรี
-      let mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${currentLng-0.01}%2C${currentLat-0.01}%2C${currentLng+0.01}%2C${currentLat+0.01}&layer=mapnik&marker=${currentLat}%2C${currentLng}`;
-      document.getElementById('mapContainer').innerHTML = `<iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="${mapUrl}"></iframe>`;
-    }
-
-    function showError(error) {
-      let msg = "";
-      switch(error.code) {
-        case error.PERMISSION_DENIED:
-          msg = "ผู้ใช้ปฏิเสธการเข้าถึงตำแหน่ง";
-          break;
-        case error.POSITION_UNAVAILABLE:
-          msg = "ข้อมูลตำแหน่งไม่พร้อมใช้งาน";
-          break;
-        case error.TIMEOUT:
-          msg = "หมดเวลาค้นหาตำแหน่ง";
-          break;
-        default:
-          msg = "ไม่ทราบข้อผิดพลาด";
-      }
-      document.getElementById('modalGpsText').innerText = "ข้อผิดพลาด: " + msg;
-      currentLat = null; currentLng = null;
-    }
-
-    // ... [Keep other functions saveNewPassword, submitMissedCheckout, askForPassword...] ...
-    
-    function actuallySaveLog() {
-      let formData = { 
-        name: currentUserName, 
-        dept: currentUserDept, 
-        actionType: currentActionToSave, 
-        timestamp: currentTimestampToSave.toString(),
-        gps: (currentLat && currentLng) ? `${currentLat},${currentLng}` : "-" // เพิ่ม GPS
-      };
-      
-      callPostAPI('saveLog', formData).then(response => {
-          document.getElementById('loadingModalWrapper').style.display = 'none';
-          if(response) {
-              if (response.status === 'error' && response.message === 'blocked_time') { 
-                  showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น"); 
-                  return; 
-              }
-              if (response.status === 'success') {
-                document.getElementById('successModalWrapper').style.display = 'flex';
-                callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
-                setTimeout(function() { backToHome(); }, 2500);
-              } else { showAlert('ข้อผิดพลาด', response.message); }
-          }
-      });
     }
 
     function saveNewPassword() {
@@ -547,6 +573,7 @@
       if (p1 !== p2) { errDiv.innerText = "รหัสผ่านไม่ตรงกัน"; errDiv.style.display = 'block'; return; }
 
       document.getElementById('setPasswordModal').style.display = 'none';
+      document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
       callPostAPI('setupPassword', { name: currentUserName, pin: p1 }).then(response => {
@@ -561,6 +588,32 @@
       });
     }
 
+    function submitMissedCheckout() {
+       let timeStr = document.getElementById('missedTimeInput').value;
+       let errDiv = document.getElementById('missedError');
+       if (!/^\d{2}:\d{2}$/.test(timeStr)) { errDiv.innerText = "กรุณากรอกเวลาให้ถูกต้อง (เช่น 17:30)"; errDiv.style.display = 'block'; return; }
+       
+       document.getElementById('missedCheckoutModal').style.display = 'none';
+       document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
+       document.getElementById('loadingModalWrapper').style.display = 'flex';
+       
+       let formData = { row: window.pendingRow, timeStr: timeStr };
+       
+       callPostAPI('saveMissedCheckout', formData).then(res => {
+           document.getElementById('loadingModalWrapper').style.display = 'none';
+           if(res) {
+               if(res.status === 'success') {
+                   document.getElementById('successModalWrapper').style.display = 'flex';
+                   setTimeout(function() {
+                       document.getElementById('successModalWrapper').style.display = 'none';
+                       hideButtons(); 
+                       prepareSubmit('เริ่มปฏิบัติงาน');
+                   }, 1500);
+               } else { showAlert('ข้อผิดพลาด', res.message); backToHome(); }
+           }
+       });
+    }
+
     function askForPassword() {
       confirmModalObj.hide(); 
       wrongPassCount = 0; 
@@ -568,12 +621,18 @@
       document.getElementById('verifyPassError').style.display = 'none';
       document.getElementById('verifyPasswordModal').style.display = 'flex';
     }
-    
+
+    function cancelVerify() {
+      document.getElementById('verifyPasswordModal').style.display = 'none';
+      backToHome(); 
+    }
+
     function submitData() {
       let pin = document.getElementById('verifyPass').value;
       if (pin.length !== 6) { document.getElementById('verifyPassError').innerText = "กรุณากรอกรหัส 6 หลัก"; document.getElementById('verifyPassError').style.display = 'block'; return; }
 
       document.getElementById('verifyPasswordModal').style.display = 'none';
+      document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
       callPostAPI('verifyPassword', { name: currentUserName, pin: pin }).then(isMatch => {
@@ -589,6 +648,33 @@
             document.getElementById('verifyPass').value = "";
           }
         }
+      });
+    }
+
+    function actuallySaveLog() {
+      // เพิ่มข้อมูล lat และ lng เข้าไปใน formData เพื่อส่งให้ระบบหลังบ้าน
+      let formData = { 
+        name: currentUserName, 
+        dept: currentUserDept, 
+        actionType: currentActionToSave, 
+        timestamp: currentTimestampToSave.toString(),
+        lat: currentLat,
+        lng: currentLng
+      };
+      
+      callPostAPI('saveLog', formData).then(response => {
+          document.getElementById('loadingModalWrapper').style.display = 'none';
+          if(response) {
+              if (response.status === 'error' && response.message === 'blocked_time') { 
+                  showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น"); 
+                  return; 
+              }
+              if (response.status === 'success') {
+                document.getElementById('successModalWrapper').style.display = 'flex';
+                callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
+                setTimeout(function() { backToHome(); }, 2500);
+              } else { showAlert('ข้อผิดพลาด', response.message); }
+          }
       });
     }
 
