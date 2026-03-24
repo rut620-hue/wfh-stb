@@ -141,7 +141,7 @@
     </div>
   </div>
 
-  <!-- Popup แจ้งเตือนให้ตั้ง Password (ใหม่) -->
+  <!-- Popup แจ้งเตือนให้ตั้ง Password -->
   <div id="confirmSetupModal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <h5 class="fw-bold text-bma mb-3">แจ้งเตือน</h5>
@@ -250,28 +250,17 @@
       let tbody = document.getElementById('todayLogsBody');
       let now = new Date(serverTimeMs);
       let currentDecimal = now.getHours() + now.getMinutes()/60;
-      // เช็คว่าเลยเวลา C4 หรือยัง
       let highlight = currentDecimal >= appSettings.alertTime;
       
       if (!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-muted py-3">ยังไม่มีข้อมูล</td></tr>'; } 
       else {
         let html = '';
         logs.forEach(log => {
-           // เช็คว่าเลยเวลาแล้ว และยังไม่มีเวลาออก
            let isLate = highlight && (!log.timeOut || log.timeOut === "-");
-           
-           // กำหนด Class สำหรับชื่อ (ตัวหนา สีแดง)
            let nameClass = isLate ? "late-name" : "";
-           // กำหนด Class สำหรับแถว (พื้นหลังเหลือง)
            let rowClass = isLate ? "highlight-alert" : "";
-           
-           // กำหนดเนื้อหาในช่องเวลาออก
            let timeOutContent = log.timeOut;
-           if (isLate) {
-               // ถ้าเลยเวลาแล้ว แสดงไอคอนสามเหลี่ยมเตือนสีเหลือง
-               timeOutContent = '<i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.2rem;"></i>';
-           }
-
+           if (isLate) { timeOutContent = '<i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.2rem;"></i>'; }
            html += `<tr class="${rowClass}"><td class="${nameClass}">${log.name}</td><td>${log.timeIn}</td><td>${timeOutContent}</td></tr>`;
         });
         tbody.innerHTML = html;
@@ -312,7 +301,7 @@
       document.getElementById('loadingModalWrapper').style.display = 'none'; 
       document.getElementById('successModalWrapper').style.display = 'none'; 
       document.getElementById('alertModal').style.display = 'none';
-      document.getElementById('confirmSetupModal').style.display = 'none'; // เพิ่มการซ่อน Modal ใหม่
+      document.getElementById('confirmSetupModal').style.display = 'none';
       
       document.getElementById('landingPage').style.display = 'flex'; document.getElementById('deptSelect').value = ""; deptChanged(); hideButtons();
       currentUserName = ""; currentUserDept = ""; wrongPassCount = 0;
@@ -362,7 +351,6 @@
           }
       }
 
-      // แก้ไข: ถ้าไม่มี Pass ให้ขึ้น Popup แจ้งเตือนก่อน
       if (action === "เริ่มปฏิบัติงาน" && !currentUserHasPass) { 
         document.getElementById('confirmSetupModal').style.display = 'flex';
         return; 
@@ -377,7 +365,6 @@
       confirmModalObj.show();
     }
 
-    // ฟังก์ชันใหม่: เปิด Popup ตั้ง Password
     function openSetPasswordModal() {
         document.getElementById('confirmSetupModal').style.display = 'none';
         document.getElementById('setPasswordModal').style.display = 'flex';
@@ -398,7 +385,6 @@
         if(response) {
             if (response.status === 'success') {
               currentUserHasPass = true;
-              // แก้ไข: แสดง Success แป๊บนึง แล้วไปหน้ายืนยันการลงเวลา
               document.getElementById('successModalWrapper').style.display = 'flex';
               setTimeout(function() {
                   document.getElementById('successModalWrapper').style.display = 'none';
@@ -426,6 +412,8 @@
 
     function askForPassword() { confirmModalObj.hide(); wrongPassCount = 0; document.getElementById('verifyPass').value = ""; document.getElementById('verifyPassError').style.display = 'none'; document.getElementById('verifyPasswordModal').style.display = 'flex'; }
     function cancelVerify() { document.getElementById('verifyPasswordModal').style.display = 'none'; backToHome(); }
+    
+    // แก้ไข: เพิ่ม Flag mustGoHomeAfterAlert กรณีผิด 5 ครั้ง
     function submitData() {
       let pin = document.getElementById('verifyPass').value;
       if (pin.length !== 6) { document.getElementById('verifyPassError').innerText = "กรุณากรอกรหัส 6 หลัก"; document.getElementById('verifyPassError').style.display = 'block'; return; }
@@ -434,7 +422,10 @@
         if (isMatch) { actuallySaveLog(); } 
         else {
           document.getElementById('loadingModalWrapper').style.display = 'none'; wrongPassCount++;
-          if (wrongPassCount >= 5) { showAlert('หมดสิทธิ์การใช้งาน', 'หากลืมพาสเวิร์ด กรุณาติดต่อฝ่ายบริหารฯ สตบ.'); } 
+          if (wrongPassCount >= 5) {
+              mustGoHomeAfterAlert = true; // ตั้งค่า Flag ให้กดตกลงแล้วเด้งกลับหน้าแรก
+              showAlert('แจ้งเตือน', 'หากลืมรหัส กรุณาติดต่อฝ่ายบริหารงานทั่วไป สตบ.'); 
+          } 
           else { document.getElementById('verifyPassError').innerText = "รหัสผิด (ครั้งที่ " + wrongPassCount + "/5)"; document.getElementById('verifyPassError').style.display = 'block'; document.getElementById('verifyPasswordModal').style.display = 'flex'; document.getElementById('verifyPass').value = ""; }
         }
       });
