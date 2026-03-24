@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบลงเวลาปฏิบัติงาน</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bma-green: #00744B;
+      --bma-green-dark: #004b30;
+    }
+    body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
+    
+    .bg-bma { background-color: var(--bma-green) !important; }
+    .text-bma { color: var(--bma-green) !important; }
+    .btn-bma { background-color: var(--bma-green); color: white; border: none; }
+    .btn-bma:hover { background-color: var(--bma-green-dark); color: white; }
+    
+    #landingPage {
+      min-height: 100vh; display: flex; flex-direction: column; padding: 40px 20px; align-items: center;
+      background: linear-gradient(135deg, var(--bma-green) 0%, var(--bma-green-dark) 100%); color: white;
+    }
+    .logo-img { width: 140px; height: auto; margin-bottom: 20px; border-radius: 50%; background-color: white; padding: 10px; }
+    #mainForm { display: none; padding: 20px; max-width: 600px; margin: 20px auto; }
+    
+    .card-form { background-color: var(--bma-green); color: white; border: none; }
+    .datetime-container { text-align: center; margin-bottom: 25px; background: rgba(255, 255, 255, 0.15); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }
+    .clock-date { font-size: 1.2rem; font-weight: 500; color: #f8f9fa; }
+    .clock-time { font-size: 3rem; font-weight: bold; color: #ffc107; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+    .status-text { font-size: 0.9rem; margin-top: 5px; font-weight: 600; color: #fff; }
+    .status-warning { color: #ffc107; }
+    
+    .table-container { width: 100%; max-width: 800px; margin-top: 40px; background: white; border-radius: 10px; padding: 20px; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
+    .table-bma-header { background-color: var(--bma-green) !important; color: white !important; }
+    
+    /* Custom Modal Styles */
+    .custom-modal-backdrop {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7); z-index: 1050; justify-content: center; align-items: center;
+    }
+    .custom-modal-content {
+      background-color: white; padding: 30px; border-radius: 15px; text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 400px;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .pin-input {
+      font-size: 24px; text-align: center; letter-spacing: 10px;
+      border: 2px solid #ced4da; border-radius: 8px; padding: 10px;
+      width: 100%; max-width: 200px; margin: 0 auto;
+    }
+    .pin-input:focus { border-color: var(--bma-green); outline: none; box-shadow: 0 0 0 0.25rem rgba(0, 116, 75, 0.25); }
+    .time-input {
+      font-size: 20px; text-align: center; 
+      border: 2px solid #ced4da; border-radius: 8px; padding: 10px;
+      width: 100%; max-width: 150px; margin: 0 auto;
+    }
+    .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+    @keyframes dots { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
+    
+    .highlight-alert { background-color: #fff3cd !important; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="landingPage">
+    <img id="mainLogo" src="https://upload.wikimedia.org/wikipedia/th/thumb/7/7b/Bangkok_Metropolitan_Administration_logo.svg/200px-Bangkok_Metropolitan_Administration_logo.svg.png" alt="Logo" class="logo-img shadow-lg">
+    <h2 class="mb-2 fw-bold text-center" id="mainTitle">ระบบลงชื่อเข้าปฏิบัติงาน สตบ.</h2>
+    
+    <!-- Clock Display -->
+    <div class="datetime-container mt-3 mb-3" style="background: rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
+        <div id="clockDate" class="clock-date">กำลังโหลด...</div>
+        <div id="clockTime" class="clock-time">--:--</div>
+        <div id="statusText" class="status-text"></div>
+    </div>
+
+    <button class="btn btn-light btn-lg text-bma fw-bold px-5 py-3 rounded-pill shadow mb-4" onclick="enterSystem()">เข้าใช้งานระบบ</button>
+    
+    <!-- Table Today -->
+    <div class="table-container">
+      <h5 class="fw-bold mb-3 text-center" id="tableHeaderDate">ข้อมูลการปฏิบัติงานวันนี้</h5>
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered text-center align-middle">
+          <thead class="table-bma-header">
+            <tr><th>ชื่อ-สกุล</th><th>เวลาเข้า</th><th>เวลาออก</th></tr>
+          </thead>
+          <tbody id="todayLogsBody"><tr><td colspan="3" class="text-bma py-4 fw-bold">กำลังโหลด...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table Pending Checkouts -->
+    <div class="table-container mt-4" id="pendingSection" style="display:none;">
+      <h5 class="fw-bold mb-3 text-center text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ผู้ที่ไม่ลงเวลาปฏิบัติงานเสร็จสิ้น</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle table-striped">
+          <thead class="bg-danger text-white">
+            <tr><th>ชื่อ-สกุล</th><th>วันที่</th><th>เวลาเข้า</th></tr>
+          </thead>
+          <tbody id="pendingLogsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainForm">
+    <div class="card card-form shadow-lg rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h4 class="card-title text-center mb-4 fw-bold text-white">บันทึกเวลาปฏิบัติงาน</h4>
+        
+        <div class="datetime-container">
+          <div id="clockDate2" class="clock-date">กำลังโหลด...</div>
+          <div id="clockTime2" class="clock-time">--:--</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold text-white">สังกัด:</label>
+          <select id="deptSelect" class="form-select form-select-lg" onchange="deptChanged()"><option value="">-- เลือกสังกัด --</option></select>
+        </div>
+
+        <div class="mb-3" id="groupDiv" style="display:none;">
+          <label class="form-label fw-bold text-white">กลุ่มงาน:</label>
+          <select id="groupSelect" class="form-select form-select-lg" onchange="groupChanged()"><option value="">-- เลือกกลุ่มงาน --</option></select>
+        </div>
+
+        <div class="mb-3" id="nameDiv" style="display:none;">
+          <label class="form-label fw-bold text-white">ชื่อ-สกุล:</label>
+          <select id="nameSelect" class="form-select form-select-lg" onchange="nameChanged()"><option value="">-- เลือกชื่อ-สกุล --</option></select>
+        </div>
+
+        <div id="loadingMsg" class="text-center text-warning fw-bold mt-4" style="display:none;">
+          <span class="spinner-border spinner-border-sm"></span> กำลังตรวจสอบ...
+        </div>
+
+        <div class="d-grid gap-3 mt-4">
+          <button id="btnIn" class="btn btn-light text-success btn-lg fw-bold py-3" style="display:none;" onclick="prepareSubmit('เริ่มปฏิบัติงาน')">เริ่มปฏิบัติงาน</button>
+          <button id="btnOut" class="btn btn-danger btn-lg fw-bold py-3 text-white" style="display:none;" onclick="prepareSubmit('เสร็จสิ้นการปฏิบัติงาน')">เสร็จสิ้นการปฏิบัติงาน</button>
+          <button id="btnDone" class="btn btn-secondary btn-lg fw-bold py-3 text-light" style="display:none;" disabled></button>
+        </div>
+        
+        <div class="text-center mt-4">
+           <button class="btn btn-outline-light btn-sm rounded-pill px-4" onclick="backToHome()">กลับหน้าหลัก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  
+  <!-- 1. Confirm Modal -->
+  <div class="modal fade" id="confirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header bg-bma text-white rounded-top-4">
+          <h5 class="modal-title fw-bold">ยืนยันการบันทึก</h5>
+        </div>
+        <div class="modal-body fs-5 px-4 py-4">
+          <p class="mb-2 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
+          <p class="mb-2 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
+          <p class="mb-2 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
+          <p class="mb-0 mt-3 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
+        </div>
+        <div class="modal-footer bg-light rounded-bottom-4">
+          <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-bma px-4 fw-bold" onclick="askForPassword()">ยืนยันข้อมูล</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Set Password Modal -->
+  <div id="setPasswordModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3">ตั้งรหัสผ่านครั้งแรก</h5>
+      <p class="text-muted small mb-3">กรุณาตั้งรหัสผ่าน 6 หลัก (ตัวเลขเท่านั้น)</p>
+      <div class="mb-3">
+        <input type="number" id="newPass1" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div class="mb-3">
+        <input type="number" id="newPass2" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div id="setupPassError" class="text-danger small mb-2" style="display:none;"></div>
+      <button class="btn btn-bma w-100 mt-2" onclick="saveNewPassword()">บันทึกรหัสผ่าน</button>
+      <button class="btn btn-link text-muted small mt-2" onclick="backToHome()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- 3. Verify Password Modal -->
+  <div id="verifyPasswordModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3">ยืนยันรหัสผ่าน</h5>
+      <p class="text-muted small">กรุณากรอกรหัสผ่าน 6 หลัก</p>
+      <div class="mb-3">
+        <input type="password" inputmode="numeric" id="verifyPass" class="pin-input" maxlength="6" placeholder="------" oninput="this.value=this.value.slice(0,6)">
+      </div>
+      <div id="verifyPassError" class="text-danger small mb-2" style="display:none;"></div>
+      <button class="btn btn-bma w-100 mt-2" onclick="submitData()">ยืนยันการบันทึก</button>
+      <button class="btn btn-link text-muted small mt-2" onclick="cancelVerify()">ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- 4. Missed Checkout Modal -->
+  <div id="missedCheckoutModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-danger mb-3">พบการปฏิบัติงานที่ยังไม่สิ้นสุด!</h5>
+      <p class="text-dark small">ท่านยังไม่ได้ลงเวลาออกในวันที่ <span id="missedDate" class="fw-bold"></span></p>
+      <p class="text-muted small">กรุณากรอกเวลาออกของวันดังกล่าว เพื่อสิ้นสุดการทำงาน<br>(รูปแบบ ชั่วโมง:นาที เช่น 17:30)</p>
+      
+      <div class="mb-3 d-flex justify-content-center align-items-center gap-2">
+        <input type="text" id="missedTimeInput" class="time-input" placeholder="17:30" maxlength="5">
+        <span>น.</span>
+      </div>
+      
+      <div id="missedError" class="text-danger small mb-2" style="display:none;"></div>
+      
+      <button class="btn btn-bma w-100 mt-2" onclick="submitMissedCheckout()">บันทึกเวลาออกย้อนหลัง</button>
+    </div>
+  </div>
+
+  <!-- 5. Generic Alert Modal -->
+  <div id="alertModal" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <h5 class="fw-bold text-bma mb-3" id="alertTitle">แจ้งเตือน</h5>
+      <p class="text-dark" id="alertMsg"></p>
+      <button class="btn btn-bma w-100 mt-3" onclick="closeAlert()">ตกลง</button>
+    </div>
+  </div>
+
+  <!-- 6. Loading Modal -->
+  <div id="loadingModalWrapper" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <div class="spinner-border text-bma mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+      <h5 class="fw-bold text-bma mb-2 loading-dots">กำลังบันทึกข้อมูล โปรดรอสักครู่</h5>
+    </div>
+  </div>
+
+  <!-- 7. Success Modal -->
+  <div id="successModalWrapper" class="custom-modal-backdrop">
+    <div class="custom-modal-content">
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="var(--bma-green)" class="bi bi-check-circle-fill mb-3" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+      </svg>
+      <h4 class="fw-bold text-bma mb-2">บันทึกข้อมูลเรียบร้อยแล้ว</h4>
+      <p class="text-muted mb-0">กำลังดำเนินการต่อ...</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let serverTimeMs = 0;
+    let allStaffData = {};
+    let currentTimestampToSave = 0;
+    let currentActionToSave = "";
+    let userCheckInTimeMs = null;
+    let currentUserName = ""; 
+    let currentUserDept = "";
+    let currentUserHasPass = false;
+    let confirmModalObj;
+    let wrongPassCount = 0;
+    
+    // Settings from server
+    let appSettings = {};
+
+    window.onload = function() {
+      confirmModalObj = new bootstrap.Modal(document.getElementById('confirmModal'));
+      google.script.run.withSuccessHandler(initApp).getInitData();
+    };
+
+    function initApp(data) {
+      serverTimeMs = data.time;
+      appSettings = data.settings;
+      allStaffData = data.staff;
+      
+      // Apply Settings
+      if(appSettings.logoUrl) document.getElementById('mainLogo').src = appSettings.logoUrl;
+      if(appSettings.title) {
+          document.getElementById('mainTitle').innerText = appSettings.title;
+          document.title = appSettings.title;
+      }
+      
+      populateDept();
+      updateTables(data.logs, data.pending);
+      
+      renderTime(); 
+      setInterval(function() {
+          serverTimeMs += 1000;
+          renderTime();
+      }, 1000);
+    }
+
+    function updateTables(logs, pendings) {
+        let tbody = document.getElementById('todayLogsBody');
+        let now = new Date(serverTimeMs);
+        let currentDecimal = now.getHours() + now.getMinutes()/60;
+        // ไฮไลท์หลังเวลา Alert (C4)
+        let highlight = currentDecimal >= appSettings.alertTime;
+        
+        if (!logs || logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-muted py-3">ยังไม่มีข้อมูล</td></tr>';
+        } else {
+          let html = '';
+          logs.forEach(log => {
+             let isHighlight = highlight && (!log.timeOut || log.timeOut === "-");
+             let rowClass = isHighlight ? "highlight-alert" : "";
+             html += `<tr class="${rowClass}"><td>${log.name}</td><td>${log.timeIn}</td><td>${log.timeOut}</td></tr>`;
+          });
+          tbody.innerHTML = html;
+        }
+        
+        let pBody = document.getElementById('pendingLogsBody');
+        if(pendings && pendings.length > 0) {
+            document.getElementById('pendingSection').style.display = 'block';
+            let pHtml = '';
+            pendings.forEach(p => {
+                pHtml += `<tr class="text-danger fw-bold"><td>${p.name}</td><td>${p.date}</td><td>${p.timeIn}</td></tr>`;
+            });
+            pBody.innerHTML = pHtml;
+        } else {
+            document.getElementById('pendingSection').style.display = 'none';
+        }
+    }
+
+    function renderTime() {
+      let d = new Date(serverTimeMs);
+      let year = d.getFullYear() + 543;
+      let dayName = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][d.getDay()];
+      let monthName = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][d.getMonth()];
+      
+      let fullDateStr = "วัน" + dayName + "ที่ " + d.getDate() + " " + monthName + " พ.ศ. " + year;
+      let timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+      
+      document.getElementById('clockDate').innerText = fullDateStr;
+      document.getElementById('clockTime').innerText = timeStr;
+      
+      let date2 = document.getElementById('clockDate2');
+      if(date2) {
+          date2.innerText = fullDateStr;
+          document.getElementById('clockTime2').innerText = timeStr;
+      }
+      
+      // Status Text Logic
+      let statusHtml = "";
+      let h = d.getHours();
+      let m = d.getMinutes();
+      let timeDecimal = h + m/60;
+      
+      // Logic: C3(Start) to C4(Alert) is Check-in window.
+      if (timeDecimal < appSettings.startTime) {
+          statusHtml = "<span class='status-warning'>นอกเวลาทำการ (เริ่มเช็คอินได้เวลา " + formatTime(appSettings.startTime) + " น.)</span>";
+      } else if (timeDecimal >= appSettings.startTime && timeDecimal <= appSettings.alertTime) {
+          statusHtml = "<span>เวลาทำการ (สามารถลงเวลาเข้างานได้)</span>";
+      } else {
+          statusHtml = "<span class='status-warning'>นอกเวลาลงเวลาเข้างาน (สิ้นสุดช่วงลงเวลา " + formatTime(appSettings.alertTime) + " น.)</span>";
+      }
+      document.getElementById('statusText').innerHTML = statusHtml;
+      
+      document.getElementById('tableHeaderDate').innerText = "ข้อมูลการปฏิบัติงาน" + fullDateStr;
+    }
+
+    function formatTime(decimal) {
+        let h = Math.floor(decimal);
+        let m = Math.round((decimal - h) * 60);
+        return h.toString().padStart(2,'0') + "." + m.toString().padStart(2,'0');
+    }
+
+    function enterSystem() {
+      document.getElementById('landingPage').style.display = 'none';
+      document.getElementById('mainForm').style.display = 'block';
+    }
+    
+    function backToHome() {
+      document.getElementById('mainForm').style.display = 'none';
+      document.getElementById('setPasswordModal').style.display = 'none';
+      document.getElementById('verifyPasswordModal').style.display = 'none';
+      document.getElementById('missedCheckoutModal').style.display = 'none';
+      document.getElementById('loadingModalWrapper').style.display = 'none';
+      document.getElementById('successModalWrapper').style.display = 'none';
+      document.getElementById('alertModal').style.display = 'none';
+      
+      document.getElementById('landingPage').style.display = 'flex';
+      
+      document.getElementById('deptSelect').value = "";
+      deptChanged();
+      hideButtons();
+      currentUserName = "";
+      currentUserDept = "";
+      wrongPassCount = 0;
+      
+      google.script.run.withSuccessHandler(function(d){ updateTables(d.logs, d.pending); }).getInitData();
+    }
+
+    function populateDept() {
+      let deptSelect = document.getElementById('deptSelect');
+      deptSelect.innerHTML = '<option value="">-- เลือกสังกัด --</option>';
+      for (let dept in allStaffData) { deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`; }
+    }
+
+    function deptChanged() {
+      let dept = document.getElementById('deptSelect').value;
+      let groupSelect = document.getElementById('groupSelect');
+      hideButtons();
+      document.getElementById('nameDiv').style.display = 'none';
+      groupSelect.innerHTML = '<option value="">-- เลือกกลุ่มงาน --</option>';
+      if (!dept) { document.getElementById('groupDiv').style.display = 'none'; return; }
+      let groups = Object.keys(allStaffData[dept]);
+      if (groups.length === 1 && groups[0] === "ไม่มี") {
+        document.getElementById('groupDiv').style.display = 'none';
+        populateNames(dept, "ไม่มี");
+      } else {
+        document.getElementById('groupDiv').style.display = 'block';
+        for (let i = 0; i < groups.length; i++) { groupSelect.innerHTML += `<option value="${groups[i]}">${groups[i]}</option>`; }
+      }
+    }
+
+    function groupChanged() {
+      hideButtons();
+      let dept = document.getElementById('deptSelect').value;
+      let group = document.getElementById('groupSelect').value;
+      if (group) { populateNames(dept, group); } else { document.getElementById('nameDiv').style.display = 'none'; }
+    }
+
+    function populateNames(dept, group) {
+      let nameSelect = document.getElementById('nameSelect');
+      nameSelect.innerHTML = '<option value="">-- เลือกชื่อ-สกุล --</option>';
+      let names = allStaffData[dept][group];
+      for (let i = 0; i < names.length; i++) { nameSelect.innerHTML += `<option value="${names[i]}">${names[i]}</option>`; }
+      document.getElementById('nameDiv').style.display = 'block';
+    }
+
+    function nameChanged() {
+      hideButtons();
+      let name = document.getElementById('nameSelect').value;
+      if (!name) return;
+      document.getElementById('loadingMsg').style.display = 'block';
+      
+      google.script.run.withSuccessHandler(function(response) {
+        document.getElementById('loadingMsg').style.display = 'none';
+        userCheckInTimeMs = response.checkInTimeMs;
+        currentUserHasPass = response.hasPassword;
+        currentUserName = name;
+        currentUserDept = document.getElementById('deptSelect').value;
+        
+        if (response.latestStatus === "ยังไม่ได้ปฏิบัติงาน") {
+          document.getElementById('btnIn').style.display = 'block';
+        } else if (response.latestStatus === "เริ่มปฏิบัติงาน") {
+          document.getElementById('btnOut').style.display = 'block';
+        } else if (response.latestStatus === "เสร็จสิ้นการปฏิบัติงาน") {
+          let btnDone = document.getElementById('btnDone');
+          btnDone.style.display = 'block';
+          if (response.finishedTimeMs) {
+              let d = new Date(response.finishedTimeMs);
+              let timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+              btnDone.innerText = `วันนี้ท่านได้ลงเวลาสิ้นสุดการปฏิบัติงานแล้ว เมื่อเวลา ${timeStr} น.`;
+          }
+        } else if (response.latestStatus === "ค้างปฏิบัติงาน") {
+          document.getElementById('missedDate').innerText = response.pendingDateStr;
+          document.getElementById('missedTimeInput').value = "";
+          document.getElementById('missedError').style.display = 'none';
+          document.getElementById('missedCheckoutModal').style.display = 'flex';
+          window.pendingRow = response.pendingRow;
+        }
+      }).checkStatus(name);
+    }
+
+    function hideButtons() {
+      document.getElementById('btnIn').style.display = 'none';
+      document.getElementById('btnOut').style.display = 'none';
+      document.getElementById('btnDone').style.display = 'none'; 
+      document.getElementById('loadingMsg').style.display = 'none';
+    }
+
+    function prepareSubmit(action) {
+      let now = new Date(serverTimeMs);
+      let currentDecimal = now.getHours() + now.getMinutes()/60;
+      
+      // *** แก้ไข: เช็คเวลา Check-In ตามเงื่อนไข C3 - C4 ***
+      if (action === "เริ่มปฏิบัติงาน") {
+          if (currentDecimal < appSettings.startTime || currentDecimal > appSettings.alertTime) {
+              showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น");
+              return;
+          }
+      }
+
+      if (action === "เริ่มปฏิบัติงาน" && !currentUserHasPass) {
+        document.getElementById('setPasswordModal').style.display = 'flex';
+        return;
+      }
+
+      currentTimestampToSave = serverTimeMs; 
+      currentActionToSave = action;
+      
+      document.getElementById('modalName').innerText = currentUserName;
+      document.getElementById('modalDept').innerText = currentUserDept;
+      document.getElementById('modalAction').innerText = action;
+      document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+
+      confirmModalObj.show();
+    }
+
+    // --- Actions ---
+
+    function saveNewPassword() {
+      let p1 = document.getElementById('newPass1').value;
+      let p2 = document.getElementById('newPass2').value;
+      let errDiv = document.getElementById('setupPassError');
+      
+      if (p1.length !== 6 || !/^\d+$/.test(p1)) { errDiv.innerText = "รหัสผ่านต้องเป็นตัวเลข 6 หลัก"; errDiv.style.display = 'block'; return; }
+      if (p1 !== p2) { errDiv.innerText = "รหัสผ่านไม่ตรงกัน"; errDiv.style.display = 'block'; return; }
+
+      document.getElementById('setPasswordModal').style.display = 'none';
+      document.getElementById('loadingModalWrapper').style.display = 'flex';
+
+      google.script.run.withSuccessHandler(function(response) {
+        document.getElementById('loadingModalWrapper').style.display = 'none';
+        if (response.status === 'success') {
+          currentUserHasPass = true;
+          document.getElementById('successModalWrapper').style.display = 'flex';
+          setTimeout(function() { backToHome(); }, 2500);
+        } else { showAlert('ข้อผิดพลาด', response.message); }
+      }).setupPassword(currentUserName, p1);
+    }
+
+    function submitMissedCheckout() {
+       let timeStr = document.getElementById('missedTimeInput').value;
+       let errDiv = document.getElementById('missedError');
+       if (!/^\d{2}:\d{2}$/.test(timeStr)) { errDiv.innerText = "กรุณากรอกเวลาให้ถูกต้อง (เช่น 17:30)"; errDiv.style.display = 'block'; return; }
+       
+       document.getElementById('missedCheckoutModal').style.display = 'none';
+       document.getElementById('loadingModalWrapper').style.display = 'flex';
+       
+       let formData = { row: window.pendingRow, timeStr: timeStr };
+       
+       google.script.run.withSuccessHandler(function(res){
+           document.getElementById('loadingModalWrapper').style.display = 'none';
+           if(res.status === 'success') {
+               document.getElementById('successModalWrapper').style.display = 'flex';
+               setTimeout(function() {
+                   document.getElementById('successModalWrapper').style.display = 'none';
+                   hideButtons(); 
+                   prepareSubmit('เริ่มปฏิบัติงาน');
+               }, 1500);
+           } else { showAlert('ข้อผิดพลาด', res.message); backToHome(); }
+       }).saveMissedCheckout(formData);
+    }
+
+    function askForPassword() {
+      confirmModalObj.hide(); 
+      wrongPassCount = 0; 
+      document.getElementById('verifyPass').value = "";
+      document.getElementById('verifyPassError').style.display = 'none';
+      document.getElementById('verifyPasswordModal').style.display = 'flex';
+    }
+
+    function cancelVerify() {
+      document.getElementById('verifyPasswordModal').style.display = 'none';
+      backToHome(); 
+    }
+
+    function submitData() {
+      let pin = document.getElementById('verifyPass').value;
+      if (pin.length !== 6) { document.getElementById('verifyPassError').innerText = "กรุณากรอกรหัส 6 หลัก"; document.getElementById('verifyPassError').style.display = 'block'; return; }
+
+      document.getElementById('verifyPasswordModal').style.display = 'none';
+      document.getElementById('loadingModalWrapper').style.display = 'flex';
+
+      google.script.run.withSuccessHandler(function(isMatch) {
+        if (isMatch) { actuallySaveLog(); } 
+        else {
+          document.getElementById('loadingModalWrapper').style.display = 'none';
+          wrongPassCount++;
+          if (wrongPassCount >= 5) { showAlert('หมดสิทธิ์การใช้งาน', 'หากลืมพาสเวิร์ด กรุณาติดต่อฝ่ายบริหารฯ สตบ.'); } 
+          else {
+            document.getElementById('verifyPassError').innerText = "รหัสผิด (ครั้งที่ " + wrongPassCount + "/5)";
+            document.getElementById('verifyPassError').style.display = 'block';
+            document.getElementById('verifyPasswordModal').style.display = 'flex';
+            document.getElementById('verifyPass').value = "";
+          }
+        }
+      }).verifyPassword(currentUserName, pin);
+    }
+
+    function actuallySaveLog() {
+      let formData = { name: currentUserName, dept: currentUserDept, actionType: currentActionToSave, timestamp: currentTimestampToSave.toString() };
+      google.script.run.withSuccessHandler(function(response) {
+          document.getElementById('loadingModalWrapper').style.display = 'none';
+          if (response.status === 'error' && response.message === 'blocked_time') { 
+              showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น"); 
+              return; 
+          }
+          if (response && response.status === 'success') {
+            document.getElementById('successModalWrapper').style.display = 'flex';
+            google.script.run.withSuccessHandler(function(d){ updateTables(d.logs, d.pending); }).getInitData();
+            setTimeout(function() { backToHome(); }, 2500);
+          } else { showAlert('ข้อผิดพลาด', response ? response.message : 'ไม่ทราบสาเหตุ'); }
+      }).saveLog(formData);
+    }
+
+    function showAlert(title, msg) { document.getElementById('alertTitle').innerText = title; document.getElementById('alertMsg').innerText = msg; document.getElementById('alertModal').style.display = 'flex'; }
+    function closeAlert() { document.getElementById('alertModal').style.display = 'none'; if(document.getElementById('alertTitle').innerText === 'หมดสิทธิ์การใช้งาน') { backToHome(); } }
+  </script>
+</body>
+</html>
