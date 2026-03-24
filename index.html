@@ -38,7 +38,6 @@
     .table-container { width: 100%; max-width: 800px; margin-top: 40px; background: white; border-radius: 10px; padding: 20px; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
     .table-bma-header { background-color: var(--bma-green) !important; color: white !important; }
     
-    /* Custom Modal Styles */
     .custom-modal-backdrop {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.7); z-index: 1050; justify-content: center; align-items: center;
@@ -154,12 +153,17 @@
         <div class="modal-header bg-bma text-white rounded-top-4">
           <h5 class="modal-title fw-bold">ยืนยันการบันทึก</h5>
         </div>
-        <div class="modal-body fs-5 px-4 py-4">
-          <p class="mb-2 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
-          <p class="mb-2 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
-          <p class="mb-2 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
+        <div class="modal-body fs-5 px-3 py-3">
+          <p class="mb-1 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
+          <p class="mb-1 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
+          <p class="mb-1 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
           <p class="mb-2 text-dark"><b>พิกัด:</b> <span id="modalGps" class="text-primary fs-6 fw-bold"></span></p>
-          <p class="mb-0 mt-3 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
+          
+          <div id="mapContainer" class="rounded-3 overflow-hidden shadow-sm border border-secondary mb-3" style="height: 180px; display: none;">
+            <iframe id="mapFrame" width="100%" height="100%" frameborder="0" style="border:0;" src="" allowfullscreen></iframe>
+          </div>
+
+          <p class="mb-0 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
         </div>
         <div class="modal-footer bg-light rounded-bottom-4">
           <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
@@ -287,7 +291,6 @@
     let wrongPassCount = 0;
     let appSettings = {};
     
-    // ตัวแปรสำหรับเก็บพิกัด
     let currentLat = null;
     let currentLng = null;
 
@@ -415,6 +418,10 @@
       currentLat = null;
       currentLng = null;
       
+      // ปิดการแสดงแผนที่เคลียร์ไว้
+      document.getElementById('mapContainer').style.display = 'none';
+      document.getElementById('mapFrame').src = '';
+      
       callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
     }
 
@@ -500,7 +507,6 @@
       document.getElementById('loadingMsg').style.display = 'none';
     }
 
-    // *** ปรับปรุงฟังก์ชันเตรียมบันทึกข้อมูล ให้ขอดึงพิกัด GPS ก่อน ***
     function prepareSubmit(action) {
       let now = new Date(serverTimeMs);
       let currentDecimal = now.getHours() + now.getMinutes()/60;
@@ -517,17 +523,14 @@
         return;
       }
 
-      // แสดงหน้าต่างโหลด แจ้งว่ากำลังดึง GPS
       document.getElementById('loadingText').innerText = "กำลังค้นหาตำแหน่ง GPS ของคุณ...";
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
-      // ตรวจสอบและดึง GPS
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           function(position) {
-            // ดึงข้อมูลสำเร็จ
             document.getElementById('loadingModalWrapper').style.display = 'none';
-            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่"; // คืนค่าข้อความเดิมไว้ใช้ทีหลัง
+            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่"; 
             
             currentLat = position.coords.latitude;
             currentLng = position.coords.longitude;
@@ -539,13 +542,18 @@
             document.getElementById('modalDept').innerText = currentUserDept;
             document.getElementById('modalAction').innerText = action;
             document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-            // แสดงพิกัดใน Popup ยืนยัน
             document.getElementById('modalGps').innerText = currentLat.toFixed(5) + ", " + currentLng.toFixed(5);
+
+            // ==========================================
+            // เพิ่มการแสดงผล Google Maps
+            // ==========================================
+            let mapUrl = `https://maps.google.com/maps?q=${currentLat},${currentLng}&hl=th&z=16&output=embed`;
+            document.getElementById('mapFrame').src = mapUrl;
+            document.getElementById('mapContainer').style.display = 'block';
 
             confirmModalObj.show();
           },
           function(error) {
-            // เกิดข้อผิดพลาดในการดึง GPS
             document.getElementById('loadingModalWrapper').style.display = 'none';
             document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
             
@@ -652,7 +660,6 @@
     }
 
     function actuallySaveLog() {
-      // เพิ่มข้อมูล lat และ lng เข้าไปใน formData เพื่อส่งให้ระบบหลังบ้าน
       let formData = { 
         name: currentUserName, 
         dept: currentUserDept, 
