@@ -245,7 +245,7 @@
     // ==========================================
     // ส่วนเชื่อมต่อ API ของ GAS
     // ==========================================
-    const API_URL = "ใส่_URL_WEB_APP_ที่นี่"; // <--- นำ URL ที่ลงท้ายด้วย /exec มาวางตรงนี้
+    const API_URL = "https://script.google.com/macros/s/AKfycbxzCXaGQqcs4CL7iZml_RPgk5anpOCLb757qQtvLt0F8U5bPCaiNeo8yQ2jVCBZc3k/exec"; // <--- นำ URL ที่ลงท้ายด้วย /exec มาวางตรงนี้
 
     async function callGetAPI(action) {
       try {
@@ -260,7 +260,7 @@
 
     async function callPostAPI(action, data) {
       try {
-        let response = await fetch(https://script.google.com/macros/s/AKfycbxzCXaGQqcs4CL7iZml_RPgk5anpOCLb757qQtvLt0F8U5bPCaiNeo8yQ2jVCBZc3k/exec, {
+        let response = await fetch(API_URL, {
           method: 'POST',
           body: JSON.stringify({ action: action, data: data }),
           headers: { "Content-Type": "text/plain;charset=utf-8" } // ใช้ text/plain เพื่อเลี่ยงปัญหา CORS
