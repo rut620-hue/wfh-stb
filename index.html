@@ -38,6 +38,7 @@
     .table-container { width: 100%; max-width: 800px; margin-top: 40px; background: white; border-radius: 10px; padding: 20px; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
     .table-bma-header { background-color: var(--bma-green) !important; color: white !important; }
     
+    /* Custom Modal Styles */
     .custom-modal-backdrop {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.7); z-index: 1050; justify-content: center; align-items: center;
@@ -103,6 +104,10 @@
         </table>
       </div>
     </div>
+     <!-- Footer หน้าฟอร์ม -->
+    <footer class="footer-text-form">
+      จัดทำโดย ฝ่ายบริหารงานทั่วไป สำนักงานตรวจและบังคับการ สำนักเทศกิจ โทร. 3366
+    </footer>
   </div>
 
   <div id="mainForm">
@@ -153,17 +158,11 @@
         <div class="modal-header bg-bma text-white rounded-top-4">
           <h5 class="modal-title fw-bold">ยืนยันการบันทึก</h5>
         </div>
-        <div class="modal-body fs-5 px-3 py-3">
-          <p class="mb-1 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
-          <p class="mb-1 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
-          <p class="mb-1 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
-          <p class="mb-2 text-dark"><b>พิกัด:</b> <span id="modalGps" class="text-primary fs-6 fw-bold"></span></p>
-          
-          <div id="mapContainer" class="rounded-3 overflow-hidden shadow-sm border border-secondary mb-3" style="height: 180px; display: none;">
-            <iframe id="mapFrame" width="100%" height="100%" frameborder="0" style="border:0;" src="" allowfullscreen></iframe>
-          </div>
-
-          <p class="mb-0 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
+        <div class="modal-body fs-5 px-4 py-4">
+          <p class="mb-2 text-dark"><b>ชื่อ:</b> <span id="modalName" class="text-bma fw-bold"></span></p>
+          <p class="mb-2 text-dark"><b>สังกัด:</b> <span id="modalDept"></span></p>
+          <p class="mb-2 text-dark"><b>ประเภท:</b> <span id="modalAction" class="badge bg-bma fs-6"></span></p>
+          <p class="mb-0 mt-3 p-2 bg-light rounded text-center text-dark"><b>เวลา:</b> <br><span id="modalTime" class="text-danger fw-bold fs-3"></span></p>
         </div>
         <div class="modal-footer bg-light rounded-bottom-4">
           <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">ยกเลิก</button>
@@ -230,7 +229,7 @@
   <div id="loadingModalWrapper" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <div class="spinner-border text-bma mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
-      <h5 id="loadingText" class="fw-bold text-bma mb-2 loading-dots">กำลังบันทึกข้อมูล โปรดรอสักครู่</h5>
+      <h5 class="fw-bold text-bma mb-2 loading-dots">กำลังบันทึกข้อมูล โปรดรอสักครู่</h5>
     </div>
   </div>
 
@@ -250,7 +249,7 @@
     // ==========================================
     // ส่วนเชื่อมต่อ API ของ GAS
     // ==========================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbzw-o1c-BnvqHBrC4Om8NhXJcm9yKE36rjPd10fSdhFhwlhLa4-74fEW9XnFLRgkKQ/exec"; // <--- แก้ไข URL ให้ตรงกับที่ Deploy ใหม่
+    const API_URL = "https://script.google.com/macros/s/AKfycbwcEnoZFcMdrn7Nuv6uCJCywj_ftuekQFAcUdvuJpa7p4E89Fxi5tMHTd6d6ZbevIQ/exec"; // <--- นำ URL ที่ลงท้ายด้วย /exec มาวางตรงนี้
 
     async function callGetAPI(action) {
       try {
@@ -268,7 +267,7 @@
         let response = await fetch(API_URL, {
           method: 'POST',
           body: JSON.stringify({ action: action, data: data }),
-          headers: { "Content-Type": "text/plain;charset=utf-8" }
+          headers: { "Content-Type": "text/plain;charset=utf-8" } // ใช้ text/plain เพื่อเลี่ยงปัญหา CORS
         });
         return await response.json();
       } catch (error) {
@@ -290,12 +289,10 @@
     let confirmModalObj;
     let wrongPassCount = 0;
     let appSettings = {};
-    
-    let currentLat = null;
-    let currentLng = null;
 
     window.onload = function() {
       confirmModalObj = new bootstrap.Modal(document.getElementById('confirmModal'));
+      // เรียกข้อมูลเริ่มต้นผ่าน API
       callGetAPI('getInitData').then(data => {
         if(data) initApp(data);
       });
@@ -415,12 +412,6 @@
       currentUserName = "";
       currentUserDept = "";
       wrongPassCount = 0;
-      currentLat = null;
-      currentLng = null;
-      
-      // ปิดการแสดงแผนที่เคลียร์ไว้
-      document.getElementById('mapContainer').style.display = 'none';
-      document.getElementById('mapFrame').src = '';
       
       callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
     }
@@ -523,53 +514,15 @@
         return;
       }
 
-      document.getElementById('loadingText').innerText = "กำลังค้นหาตำแหน่ง GPS ของคุณ...";
-      document.getElementById('loadingModalWrapper').style.display = 'flex';
+      currentTimestampToSave = serverTimeMs; 
+      currentActionToSave = action;
+      
+      document.getElementById('modalName').innerText = currentUserName;
+      document.getElementById('modalDept').innerText = currentUserDept;
+      document.getElementById('modalAction').innerText = action;
+      document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            document.getElementById('loadingModalWrapper').style.display = 'none';
-            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่"; 
-            
-            currentLat = position.coords.latitude;
-            currentLng = position.coords.longitude;
-            
-            currentTimestampToSave = serverTimeMs; 
-            currentActionToSave = action;
-            
-            document.getElementById('modalName').innerText = currentUserName;
-            document.getElementById('modalDept').innerText = currentUserDept;
-            document.getElementById('modalAction').innerText = action;
-            document.getElementById('modalTime').innerText = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-            document.getElementById('modalGps').innerText = currentLat.toFixed(5) + ", " + currentLng.toFixed(5);
-
-            // ==========================================
-            // เพิ่มการแสดงผล Google Maps
-            // ==========================================
-            let mapUrl = `https://maps.google.com/maps?q=${currentLat},${currentLng}&hl=th&z=16&output=embed`;
-            document.getElementById('mapFrame').src = mapUrl;
-            document.getElementById('mapContainer').style.display = 'block';
-
-            confirmModalObj.show();
-          },
-          function(error) {
-            document.getElementById('loadingModalWrapper').style.display = 'none';
-            document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
-            
-            let errMsg = "ไม่สามารถดึงข้อมูลพิกัดได้ กรุณาตรวจสอบการตั้งค่า";
-            if(error.code === 1) errMsg = "คุณไม่อนุญาตให้ระบบเข้าถึงตำแหน่ง (Location) กรุณาไปตั้งค่าอนุญาตในเบราว์เซอร์ก่อน";
-            else if(error.code === 2) errMsg = "ไม่พบสัญญาณ GPS กรุณาตรวจสอบว่าเปิดระบุตำแหน่งบนมือถือแล้วหรือไม่";
-            else if(error.code === 3) errMsg = "ใช้เวลาค้นหา GPS นานเกินไป กรุณาลองใหม่อีกครั้ง";
-            
-            showAlert("ข้อผิดพลาด GPS", errMsg);
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-      } else {
-        document.getElementById('loadingModalWrapper').style.display = 'none';
-        showAlert("ข้อผิดพลาด", "อุปกรณ์หรือเบราว์เซอร์ของคุณไม่รองรับการใช้งาน GPS");
-      }
+      confirmModalObj.show();
     }
 
     function saveNewPassword() {
@@ -581,7 +534,6 @@
       if (p1 !== p2) { errDiv.innerText = "รหัสผ่านไม่ตรงกัน"; errDiv.style.display = 'block'; return; }
 
       document.getElementById('setPasswordModal').style.display = 'none';
-      document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
       callPostAPI('setupPassword', { name: currentUserName, pin: p1 }).then(response => {
@@ -602,7 +554,6 @@
        if (!/^\d{2}:\d{2}$/.test(timeStr)) { errDiv.innerText = "กรุณากรอกเวลาให้ถูกต้อง (เช่น 17:30)"; errDiv.style.display = 'block'; return; }
        
        document.getElementById('missedCheckoutModal').style.display = 'none';
-       document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
        document.getElementById('loadingModalWrapper').style.display = 'flex';
        
        let formData = { row: window.pendingRow, timeStr: timeStr };
@@ -640,7 +591,6 @@
       if (pin.length !== 6) { document.getElementById('verifyPassError').innerText = "กรุณากรอกรหัส 6 หลัก"; document.getElementById('verifyPassError').style.display = 'block'; return; }
 
       document.getElementById('verifyPasswordModal').style.display = 'none';
-      document.getElementById('loadingText').innerText = "กำลังบันทึกข้อมูล โปรดรอสักครู่";
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
       callPostAPI('verifyPassword', { name: currentUserName, pin: pin }).then(isMatch => {
@@ -660,14 +610,7 @@
     }
 
     function actuallySaveLog() {
-      let formData = { 
-        name: currentUserName, 
-        dept: currentUserDept, 
-        actionType: currentActionToSave, 
-        timestamp: currentTimestampToSave.toString(),
-        lat: currentLat,
-        lng: currentLng
-      };
+      let formData = { name: currentUserName, dept: currentUserDept, actionType: currentActionToSave, timestamp: currentTimestampToSave.toString() };
       
       callPostAPI('saveLog', formData).then(response => {
           document.getElementById('loadingModalWrapper').style.display = 'none';
