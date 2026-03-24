@@ -7,6 +7,7 @@
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   
   <style>
     :root {
@@ -72,7 +73,6 @@
     <img id="mainLogo" src="https://upload.wikimedia.org/wikipedia/th/thumb/7/7b/Bangkok_Metropolitan_Administration_logo.svg/200px-Bangkok_Metropolitan_Administration_logo.svg.png" alt="Logo" class="logo-img shadow-lg">
     <h2 class="mb-2 fw-bold text-center" id="mainTitle">ระบบลงชื่อเข้าปฏิบัติงาน สตบ.</h2>
     
-    <!-- Clock Display -->
     <div class="datetime-container mt-3 mb-3" style="background: rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
         <div id="clockDate" class="clock-date">กำลังโหลด...</div>
         <div id="clockTime" class="clock-time">--:--</div>
@@ -81,7 +81,6 @@
 
     <button class="btn btn-light btn-lg text-bma fw-bold px-5 py-3 rounded-pill shadow mb-4" onclick="enterSystem()">เข้าใช้งานระบบ</button>
     
-    <!-- Table Today -->
     <div class="table-container">
       <h5 class="fw-bold mb-3 text-center" id="tableHeaderDate">ข้อมูลการปฏิบัติงานวันนี้</h5>
       <div class="table-responsive">
@@ -94,7 +93,6 @@
       </div>
     </div>
 
-    <!-- Table Pending Checkouts -->
     <div class="table-container mt-4" id="pendingSection" style="display:none;">
       <h5 class="fw-bold mb-3 text-center text-danger"><i class="bi bi-exclamation-triangle-fill"></i> ผู้ที่ไม่ลงเวลาปฏิบัติงานเสร็จสิ้น</h5>
       <div class="table-responsive">
@@ -150,9 +148,6 @@
     </div>
   </div>
 
-  <!-- Modals -->
-  
-  <!-- 1. Confirm Modal -->
   <div class="modal fade" id="confirmModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
@@ -173,7 +168,6 @@
     </div>
   </div>
 
-  <!-- 2. Set Password Modal -->
   <div id="setPasswordModal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <h5 class="fw-bold text-bma mb-3">ตั้งรหัสผ่านครั้งแรก</h5>
@@ -190,7 +184,6 @@
     </div>
   </div>
 
-  <!-- 3. Verify Password Modal -->
   <div id="verifyPasswordModal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <h5 class="fw-bold text-bma mb-3">ยืนยันรหัสผ่าน</h5>
@@ -204,7 +197,6 @@
     </div>
   </div>
 
-  <!-- 4. Missed Checkout Modal -->
   <div id="missedCheckoutModal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <h5 class="fw-bold text-danger mb-3">พบการปฏิบัติงานที่ยังไม่สิ้นสุด!</h5>
@@ -222,7 +214,6 @@
     </div>
   </div>
 
-  <!-- 5. Generic Alert Modal -->
   <div id="alertModal" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <h5 class="fw-bold text-bma mb-3" id="alertTitle">แจ้งเตือน</h5>
@@ -231,7 +222,6 @@
     </div>
   </div>
 
-  <!-- 6. Loading Modal -->
   <div id="loadingModalWrapper" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <div class="spinner-border text-bma mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
@@ -239,7 +229,6 @@
     </div>
   </div>
 
-  <!-- 7. Success Modal -->
   <div id="successModalWrapper" class="custom-modal-backdrop">
     <div class="custom-modal-content">
       <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="var(--bma-green)" class="bi bi-check-circle-fill mb-3" viewBox="0 0 16 16">
@@ -253,6 +242,38 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    // ==========================================
+    // ส่วนเชื่อมต่อ API ของ GAS
+    // ==========================================
+    const API_URL = "ใส่_URL_WEB_APP_ที่นี่"; // <--- นำ URL ที่ลงท้ายด้วย /exec มาวางตรงนี้
+
+    async function callGetAPI(action) {
+      try {
+        let response = await fetch(API_URL + "?action=" + action);
+        return await response.json();
+      } catch (error) {
+        console.error("API Error (GET):", error);
+        showAlert('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+        return null;
+      }
+    }
+
+    async function callPostAPI(action, data) {
+      try {
+        let response = await fetch(https://script.google.com/macros/s/AKfycbxzCXaGQqcs4CL7iZml_RPgk5anpOCLb757qQtvLt0F8U5bPCaiNeo8yQ2jVCBZc3k/exec, {
+          method: 'POST',
+          body: JSON.stringify({ action: action, data: data }),
+          headers: { "Content-Type": "text/plain;charset=utf-8" } // ใช้ text/plain เพื่อเลี่ยงปัญหา CORS
+        });
+        return await response.json();
+      } catch (error) {
+        console.error("API Error (POST):", error);
+        showAlert('ข้อผิดพลาด', 'ไม่สามารถส่งข้อมูลไปที่เซิร์ฟเวอร์ได้');
+        return null;
+      }
+    }
+    // ==========================================
+
     let serverTimeMs = 0;
     let allStaffData = {};
     let currentTimestampToSave = 0;
@@ -263,13 +284,14 @@
     let currentUserHasPass = false;
     let confirmModalObj;
     let wrongPassCount = 0;
-    
-    // Settings from server
     let appSettings = {};
 
     window.onload = function() {
       confirmModalObj = new bootstrap.Modal(document.getElementById('confirmModal'));
-      google.script.run.withSuccessHandler(initApp).getInitData();
+      // เรียกข้อมูลเริ่มต้นผ่าน API
+      callGetAPI('getInitData').then(data => {
+        if(data) initApp(data);
+      });
     };
 
     function initApp(data) {
@@ -277,7 +299,6 @@
       appSettings = data.settings;
       allStaffData = data.staff;
       
-      // Apply Settings
       if(appSettings.logoUrl) document.getElementById('mainLogo').src = appSettings.logoUrl;
       if(appSettings.title) {
           document.getElementById('mainTitle').innerText = appSettings.title;
@@ -298,7 +319,6 @@
         let tbody = document.getElementById('todayLogsBody');
         let now = new Date(serverTimeMs);
         let currentDecimal = now.getHours() + now.getMinutes()/60;
-        // ไฮไลท์หลังเวลา Alert (C4)
         let highlight = currentDecimal >= appSettings.alertTime;
         
         if (!logs || logs.length === 0) {
@@ -344,13 +364,11 @@
           document.getElementById('clockTime2').innerText = timeStr;
       }
       
-      // Status Text Logic
       let statusHtml = "";
       let h = d.getHours();
       let m = d.getMinutes();
       let timeDecimal = h + m/60;
       
-      // Logic: C3(Start) to C4(Alert) is Check-in window.
       if (timeDecimal < appSettings.startTime) {
           statusHtml = "<span class='status-warning'>นอกเวลาทำการ (เริ่มเช็คอินได้เวลา " + formatTime(appSettings.startTime) + " น.)</span>";
       } else if (timeDecimal >= appSettings.startTime && timeDecimal <= appSettings.alertTime) {
@@ -359,7 +377,6 @@
           statusHtml = "<span class='status-warning'>นอกเวลาลงเวลาเข้างาน (สิ้นสุดช่วงลงเวลา " + formatTime(appSettings.alertTime) + " น.)</span>";
       }
       document.getElementById('statusText').innerHTML = statusHtml;
-      
       document.getElementById('tableHeaderDate').innerText = "ข้อมูลการปฏิบัติงาน" + fullDateStr;
     }
 
@@ -392,7 +409,7 @@
       currentUserDept = "";
       wrongPassCount = 0;
       
-      google.script.run.withSuccessHandler(function(d){ updateTables(d.logs, d.pending); }).getInitData();
+      callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
     }
 
     function populateDept() {
@@ -439,8 +456,10 @@
       if (!name) return;
       document.getElementById('loadingMsg').style.display = 'block';
       
-      google.script.run.withSuccessHandler(function(response) {
+      callPostAPI('checkStatus', { name: name }).then(response => {
         document.getElementById('loadingMsg').style.display = 'none';
+        if(!response) return;
+
         userCheckInTimeMs = response.checkInTimeMs;
         currentUserHasPass = response.hasPassword;
         currentUserName = name;
@@ -465,7 +484,7 @@
           document.getElementById('missedCheckoutModal').style.display = 'flex';
           window.pendingRow = response.pendingRow;
         }
-      }).checkStatus(name);
+      });
     }
 
     function hideButtons() {
@@ -479,7 +498,6 @@
       let now = new Date(serverTimeMs);
       let currentDecimal = now.getHours() + now.getMinutes()/60;
       
-      // *** แก้ไข: เช็คเวลา Check-In ตามเงื่อนไข C3 - C4 ***
       if (action === "เริ่มปฏิบัติงาน") {
           if (currentDecimal < appSettings.startTime || currentDecimal > appSettings.alertTime) {
               showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น");
@@ -503,8 +521,6 @@
       confirmModalObj.show();
     }
 
-    // --- Actions ---
-
     function saveNewPassword() {
       let p1 = document.getElementById('newPass1').value;
       let p2 = document.getElementById('newPass2').value;
@@ -516,14 +532,16 @@
       document.getElementById('setPasswordModal').style.display = 'none';
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
-      google.script.run.withSuccessHandler(function(response) {
+      callPostAPI('setupPassword', { name: currentUserName, pin: p1 }).then(response => {
         document.getElementById('loadingModalWrapper').style.display = 'none';
-        if (response.status === 'success') {
-          currentUserHasPass = true;
-          document.getElementById('successModalWrapper').style.display = 'flex';
-          setTimeout(function() { backToHome(); }, 2500);
-        } else { showAlert('ข้อผิดพลาด', response.message); }
-      }).setupPassword(currentUserName, p1);
+        if(response) {
+            if (response.status === 'success') {
+              currentUserHasPass = true;
+              document.getElementById('successModalWrapper').style.display = 'flex';
+              setTimeout(function() { backToHome(); }, 2500);
+            } else { showAlert('ข้อผิดพลาด', response.message); }
+        }
+      });
     }
 
     function submitMissedCheckout() {
@@ -536,17 +554,19 @@
        
        let formData = { row: window.pendingRow, timeStr: timeStr };
        
-       google.script.run.withSuccessHandler(function(res){
+       callPostAPI('saveMissedCheckout', formData).then(res => {
            document.getElementById('loadingModalWrapper').style.display = 'none';
-           if(res.status === 'success') {
-               document.getElementById('successModalWrapper').style.display = 'flex';
-               setTimeout(function() {
-                   document.getElementById('successModalWrapper').style.display = 'none';
-                   hideButtons(); 
-                   prepareSubmit('เริ่มปฏิบัติงาน');
-               }, 1500);
-           } else { showAlert('ข้อผิดพลาด', res.message); backToHome(); }
-       }).saveMissedCheckout(formData);
+           if(res) {
+               if(res.status === 'success') {
+                   document.getElementById('successModalWrapper').style.display = 'flex';
+                   setTimeout(function() {
+                       document.getElementById('successModalWrapper').style.display = 'none';
+                       hideButtons(); 
+                       prepareSubmit('เริ่มปฏิบัติงาน');
+                   }, 1500);
+               } else { showAlert('ข้อผิดพลาด', res.message); backToHome(); }
+           }
+       });
     }
 
     function askForPassword() {
@@ -569,7 +589,7 @@
       document.getElementById('verifyPasswordModal').style.display = 'none';
       document.getElementById('loadingModalWrapper').style.display = 'flex';
 
-      google.script.run.withSuccessHandler(function(isMatch) {
+      callPostAPI('verifyPassword', { name: currentUserName, pin: pin }).then(isMatch => {
         if (isMatch) { actuallySaveLog(); } 
         else {
           document.getElementById('loadingModalWrapper').style.display = 'none';
@@ -582,23 +602,26 @@
             document.getElementById('verifyPass').value = "";
           }
         }
-      }).verifyPassword(currentUserName, pin);
+      });
     }
 
     function actuallySaveLog() {
       let formData = { name: currentUserName, dept: currentUserDept, actionType: currentActionToSave, timestamp: currentTimestampToSave.toString() };
-      google.script.run.withSuccessHandler(function(response) {
+      
+      callPostAPI('saveLog', formData).then(response => {
           document.getElementById('loadingModalWrapper').style.display = 'none';
-          if (response.status === 'error' && response.message === 'blocked_time') { 
-              showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น"); 
-              return; 
+          if(response) {
+              if (response.status === 'error' && response.message === 'blocked_time') { 
+                  showAlert("นอกเวลา ลงเวลาปฏิบัติงาน", "สามารถลงเวลาเข้างานได้ในช่วง " + formatTime(appSettings.startTime) + " - " + formatTime(appSettings.alertTime) + " น. เท่านั้น"); 
+                  return; 
+              }
+              if (response.status === 'success') {
+                document.getElementById('successModalWrapper').style.display = 'flex';
+                callGetAPI('getInitData').then(d => { if(d) updateTables(d.logs, d.pending); });
+                setTimeout(function() { backToHome(); }, 2500);
+              } else { showAlert('ข้อผิดพลาด', response.message); }
           }
-          if (response && response.status === 'success') {
-            document.getElementById('successModalWrapper').style.display = 'flex';
-            google.script.run.withSuccessHandler(function(d){ updateTables(d.logs, d.pending); }).getInitData();
-            setTimeout(function() { backToHome(); }, 2500);
-          } else { showAlert('ข้อผิดพลาด', response ? response.message : 'ไม่ทราบสาเหตุ'); }
-      }).saveLog(formData);
+      });
     }
 
     function showAlert(title, msg) { document.getElementById('alertTitle').innerText = title; document.getElementById('alertMsg').innerText = msg; document.getElementById('alertModal').style.display = 'flex'; }
